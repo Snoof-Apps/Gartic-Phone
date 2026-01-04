@@ -1,8 +1,11 @@
 package snoof.app.garticphone;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -40,6 +43,24 @@ public class MainActivity extends AppCompatActivity {
 
         myWebView.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+
+                // Logic: Stay in app if it's Gartic, otherwise launch external browser
+                if (url.contains("garticphone.com")) {
+                    return false;
+                } else {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        // Fallback if no browser is found
+                    }
+                    return true;
+                }
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 injectColorWheelObserver();
@@ -47,7 +68,19 @@ public class MainActivity extends AppCompatActivity {
         });
 
         myWebView.setWebChromeClient(new WebChromeClient());
-        myWebView.loadUrl("https://garticphone.com");
+
+        // --- Deep Link Handling ---
+        // Checks if the app was opened via a link (Intent)
+        Intent intent = getIntent();
+        Uri data = intent.getData();
+
+        if (intent.getAction() != null && intent.getAction().equals(Intent.ACTION_VIEW) && data != null) {
+            // Load the specific room/link provided by WhatsApp/Discord
+            myWebView.loadUrl(data.toString());
+        } else {
+            // Standard load
+            myWebView.loadUrl("https://garticphone.com");
+        }
     }
 
     private void injectColorWheelObserver() {
@@ -78,19 +111,30 @@ public class MainActivity extends AppCompatActivity {
                 "}" +
                 "" +
                 "function showIroPicker(input) {" +
-                "   var old = document.getElementById('iro-picker-container');" +
-                "   if(old) document.body.removeChild(old);" +
+                "   var oldWrapper = document.getElementById('iro-picker-wrapper');" +
+                "   if(oldWrapper) document.body.removeChild(oldWrapper);" +
                 "   " +
-                "   /* Fix: Start at White instead of Black if default value is detected */" +
                 "   var startingColor = (input.value === '#000000') ? '#ffffff' : input.value;" +
+                "   " +
+                "   var wrapper = document.createElement('div');" +
+                "   wrapper.id = 'iro-picker-wrapper';" +
+                "   wrapper.style = 'position:fixed; top:0; left:0; width:100%; height:100%; z-index:999999; background:rgba(0,0,0,0);';" +
+                "   " +
+                "   wrapper.onclick = function(e) {" +
+                "       if(e.target === wrapper) document.body.removeChild(wrapper);" +
+                "   };" +
                 "   " +
                 "   var container = document.createElement('div');" +
                 "   container.id = 'iro-picker-container';" +
-                "   container.style = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000000; background:#222; padding:20px; border-radius:20px; box-shadow:0 0 40px rgba(0,0,0,0.9); border: 2px solid #444; text-align:center;';" +
-                "   document.body.appendChild(container);" +
+                "   container.style = 'position:absolute; top:50%; left:50px; transform:translateY(-50%); background:#222; padding:20px; border-radius:20px; box-shadow:0 0 40px rgba(0,0,0,0.9); border: 2px solid #444; text-align:center;';" +
+                "   " +
+                "   container.onclick = function(e) { e.stopPropagation(); };" +
+                "   " +
+                "   wrapper.appendChild(container);" +
+                "   document.body.appendChild(wrapper);" +
                 "   " +
                 "   var cp = new iro.ColorPicker(container, {" +
-                "       width: 240, " +
+                "       width: 220, " +
                 "       color: startingColor, " +
                 "       layout: [" +
                 "           { component: iro.ui.Wheel }," +
@@ -105,8 +149,8 @@ public class MainActivity extends AppCompatActivity {
                 "   " +
                 "   var btn = document.createElement('button');" +
                 "   btn.innerText = 'SELECT';" +
-                "   btn.style = 'margin-top:15px; width:100%; height:45px; background:#5cb85c; color:white; border:none; border-radius:10px; font-weight:bold; font-size:16px;';" +
-                "   btn.onclick = () => document.body.removeChild(container);" +
+                "   btn.style = 'margin-top:15px; width:100%; height:45px; background:#735cb8; color:white; border:none; border-radius:10px; font-weight:bold; font-size:16px;';" +
+                "   btn.onclick = () => document.body.removeChild(wrapper);" +
                 "   container.appendChild(btn);" +
                 "}";
 

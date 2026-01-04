@@ -14,14 +14,25 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GarticPhone"
         android:hardwareAccelerated="true">
+
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="garticphone.com" />
+                <data android:scheme="https" android:host="garticphone.com" />
+            </intent-filter>
+
         </activity>
     </application>
 
